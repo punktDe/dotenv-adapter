@@ -22,7 +22,8 @@ class DotenvAdapter implements DotEnvVars
         $dotEnv = new Dotenv();
 
         // putenv() sets environment variables for the current process, therefore it can't be used thread-safe
-        $dotEnv->usePutenv(!ZEND_THREAD_SAFE);
+        $usePutenv = !ZEND_THREAD_SAFE;
+        $dotEnv->usePutenv($usePutenv);
 
         // $ENV_DIR defaults to the directory of the env file specified in composer.json
         $envDir = (string)($_SERVER[self::ENV_DIR] ?? $_ENV[self::ENV_DIR] ?? dirname($envFile));
@@ -48,15 +49,22 @@ class DotenvAdapter implements DotEnvVars
                 $envFile = $envDir . DIRECTORY_SEPARATOR . $envFile;
             }
 
-            if (!is_readable($envFile)) {
+            if (!is_readable($envFile) || is_dir($envFile)) {
                 continue;
             }
 
-            $dotEnv->load($envFile);
+            foreach ($dotEnv->parse(file_get_contents($envFile), $envFile) as $var => $val) {
+                if ($_SERVER[$var] ?? '') {
+                    $val = $_SERVER[$var];
+                } elseif ($usePutenv && getenv($var)) {
+                    $val = getenv($var);
+                }
 
-            // Reset Symfony loaded dotenv vars
-            // We need to do this or Symfony will override previously set dotenv vars
-            $_SERVER['SYMFONY_DOTENV_VARS'] = $_ENV['SYMFONY_DOTENV_VARS'] = '';
+                $_SERVER[$var] = $_ENV[$var] = $val;
+                if ($usePutenv) {
+                    putenv($var . '=' . $val);
+                }
+            }
         }
     }
 }
