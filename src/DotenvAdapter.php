@@ -35,7 +35,13 @@ class DotenvAdapter implements DotEnvVars
         // -> Last one wins if a variable is set in two files
         // -> Last one wins if a variable is set twice in a file
         // 3. Variables from file in composer.json extra.helhum/dotenv-connector.env-file
-        $envFiles = (string)($_SERVER[self::ENV_FILE] ?? $_ENV[self::ENV_FILE] ?? '');
+
+        if (!empty($_SERVER[self::ENV_FILE] ?? '')) {
+            $envFiles = (string)$_SERVER[self::ENV_FILE];
+        } else {
+            $envFiles = (string)($_ENV[self::ENV_FILE] ?? '');
+        }
+
         $envFiles = array_reverse(explode(PATH_SEPARATOR, $envFiles));
         $envFiles[] = $envFile;
 
