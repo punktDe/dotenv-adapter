@@ -60,7 +60,7 @@ class DotenvAdapter implements DotEnvVars
             }
 
             foreach ($dotEnv->parse(file_get_contents($envFile), $envFile) as $var => $val) {
-                if ($_SERVER[$var] ?? '') {
+                if (($_SERVER[$var] ?? '') !== '') {
                     $val = $_SERVER[$var];
                 } elseif ($usePutenv && getenv($var)) {
                     $val = getenv($var);
